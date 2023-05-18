@@ -326,7 +326,6 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 	 * Add the ID Token to the additionalInformation map for a token response.
 	 * @param idToken
 	 */
-	@Transient
 	public void setIdToken(JWT idToken) {
 		if (idToken != null) {
 			additionalInformation.put(ID_TOKEN_FIELD_NAME, idToken.serialize());

@@ -39,11 +39,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public class JpaApprovedSiteRepository implements ApprovedSiteRepository {
 
-	@PersistenceContext(unitName="defaultPersistenceUnit")
+	@PersistenceContext(name = "persistance-unit")
 	private EntityManager manager;
 
 	@Override
-	@Transactional(value="defaultTransactionManager")
+	@Transactional(value="transactionManager")
 	public Collection<ApprovedSite> getAll() {
 		TypedQuery<ApprovedSite> query = manager.createNamedQuery(ApprovedSite.QUERY_ALL, ApprovedSite.class);
 		return query.getResultList();

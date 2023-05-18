@@ -37,16 +37,24 @@ import javax.persistence.Table;
 @Table(name = "permission")
 public class Permission {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
 	private Long id;
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "resource_set_id")
 	private ResourceSet resourceSet;
+	@ElementCollection(fetch = FetchType.EAGER)
+	@Column(name = "scope")
+	@CollectionTable(
+			name = "permission_scope",
+			joinColumns = @JoinColumn(name = "owner_id")
+			)
 	private Set<String> scopes;
 
 	/**
 	 * @return the id
 	 */
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
 	public Long getId() {
 		return id;
 	}
@@ -61,8 +69,6 @@ public class Permission {
 	/**
 	 * @return the resourceSet
 	 */
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "resource_set_id")
 	public ResourceSet getResourceSet() {
 		return resourceSet;
 	}
@@ -77,12 +83,6 @@ public class Permission {
 	/**
 	 * @return the scopes
 	 */
-	@ElementCollection(fetch = FetchType.EAGER)
-	@Column(name = "scope")
-	@CollectionTable(
-			name = "permission_scope",
-			joinColumns = @JoinColumn(name = "owner_id")
-			)
 	public Set<String> getScopes() {
 		return scopes;
 	}

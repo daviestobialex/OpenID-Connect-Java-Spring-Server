@@ -43,7 +43,7 @@ import javax.persistence.Table;
 public class SystemScope {
 
 	public static final String QUERY_BY_VALUE = "SystemScope.getByValue";
-	public static final String QUERY_ALL = "SystemScope.findAll";
+	public static final String QUERY_ALL = "SystemScope.getAll";
 
 	public static final String PARAM_VALUE = "value";
 

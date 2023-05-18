@@ -1,4 +1,4 @@
-/*******************************************************************************
+/** *****************************************************************************
  * Copyright 2018 The MIT Internet Trust Consortium
  *
  * Portions copyright 2011-2013 The MITRE Corporation
@@ -14,7 +14,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *******************************************************************************/
+ ****************************************************************************** */
 package org.mitre.openid.connect.web;
 
 import java.util.List;
@@ -45,7 +45,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.google.common.base.Strings;
 
 /**
- * OpenID Connect UserInfo endpoint, as specified in Standard sec 5 and Messages sec 2.4.
+ * OpenID Connect UserInfo endpoint, as specified in Standard sec 5 and Messages
+ * sec 2.4.
  *
  * @author AANGANES
  *
@@ -54,90 +55,96 @@ import com.google.common.base.Strings;
 @RequestMapping("/" + UserInfoEndpoint.URL)
 public class UserInfoEndpoint {
 
-	public static final String URL = "userinfo";
+    public static final String URL = "userinfo";
 
-	@Autowired
-	private UserInfoService userInfoService;
+    @Autowired
+    private UserInfoService userInfoService;
 
-	@Autowired
-	private ClientDetailsEntityService clientService;
+    @Autowired
+    private ClientDetailsEntityService clientService;
 
-	/**
-	 * Logger for this class
-	 */
-	private static final Logger logger = LoggerFactory.getLogger(UserInfoEndpoint.class);
+    /**
+     * Logger for this class
+     */
+    private static final Logger logger = LoggerFactory.getLogger(UserInfoEndpoint.class);
 
-	/**
-	 * Get information about the user as specified in the accessToken included in this request
-	 */
-	@PreAuthorize("hasRole('ROLE_USER') and #oauth2.hasScope('" + SystemScopeService.OPENID_SCOPE + "')")
-	@RequestMapping(method= {RequestMethod.GET, RequestMethod.POST}, produces = {MediaType.APPLICATION_JSON_VALUE, UserInfoJWTView.JOSE_MEDIA_TYPE_VALUE})
-	public String getInfo(@RequestParam(value="claims", required=false) String claimsRequestJsonString,
-			@RequestHeader(value=HttpHeaders.ACCEPT, required=false) String acceptHeader,
-			OAuth2Authentication auth, Model model) {
+    /**
+     * Get information about the user as specified in the accessToken included
+     * in this request
+     *
+     * @param claimsRequestJsonString
+     * @param acceptHeader
+     * @param auth
+     * @param model
+     * @return
+     */
+    @PreAuthorize("hasRole('ROLE_USER') and #oauth2.hasScope('" + SystemScopeService.OPENID_SCOPE + "')")
+    @RequestMapping(method = {RequestMethod.GET, RequestMethod.POST}, produces = {MediaType.APPLICATION_JSON_VALUE, UserInfoJWTView.JOSE_MEDIA_TYPE_VALUE})
+    public String getInfo(@RequestParam(value = "claims", required = false) String claimsRequestJsonString,
+            @RequestHeader(value = HttpHeaders.ACCEPT, required = false) String acceptHeader,
+            OAuth2Authentication auth, Model model) {
 
-		if (auth == null) {
-			logger.error("getInfo failed; no principal. Requester is not authorized.");
-			model.addAttribute(HttpCodeView.CODE, HttpStatus.FORBIDDEN);
-			return HttpCodeView.VIEWNAME;
-		}
+        if (auth == null) {
+            logger.error("getInfo failed; no principal. Requester is not authorized.");
+            model.addAttribute(HttpCodeView.CODE, HttpStatus.FORBIDDEN);
+            return HttpCodeView.VIEWNAME;
+        }
 
-		String username = auth.getName();
-		UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, auth.getOAuth2Request().getClientId());
+        String username = auth.getName();
+        UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, auth.getOAuth2Request().getClientId());
 
-		if (userInfo == null) {
-			logger.error("getInfo failed; user not found: " + username);
-			model.addAttribute(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-			return HttpCodeView.VIEWNAME;
-		}
+        if (userInfo == null) {
+            logger.error("getInfo failed; user not found: " + username);
+            model.addAttribute(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
+            return HttpCodeView.VIEWNAME;
+        }
 
-		model.addAttribute(UserInfoView.SCOPE, auth.getOAuth2Request().getScope());
+        model.addAttribute(UserInfoView.SCOPE, auth.getOAuth2Request().getScope());
 
-		model.addAttribute(UserInfoView.AUTHORIZED_CLAIMS, auth.getOAuth2Request().getExtensions().get("claims"));
+        model.addAttribute(UserInfoView.AUTHORIZED_CLAIMS, auth.getOAuth2Request().getExtensions().get("claims"));
 
-		if (!Strings.isNullOrEmpty(claimsRequestJsonString)) {
-			model.addAttribute(UserInfoView.REQUESTED_CLAIMS, claimsRequestJsonString);
-		}
+        if (!Strings.isNullOrEmpty(claimsRequestJsonString)) {
+            model.addAttribute(UserInfoView.REQUESTED_CLAIMS, claimsRequestJsonString);
+        }
 
-		model.addAttribute(UserInfoView.USER_INFO, userInfo);
+        model.addAttribute(UserInfoView.USER_INFO, userInfo);
 
-		// content negotiation
+        // content negotiation
+        // start off by seeing if the client has registered for a signed/encrypted JWT from here
+        ClientDetailsEntity client = clientService.loadClientByClientId(auth.getOAuth2Request().getClientId());
+        model.addAttribute(UserInfoJWTView.CLIENT, client);
 
-		// start off by seeing if the client has registered for a signed/encrypted JWT from here
-		ClientDetailsEntity client = clientService.loadClientByClientId(auth.getOAuth2Request().getClientId());
-		model.addAttribute(UserInfoJWTView.CLIENT, client);
+        List<MediaType> mediaTypes = MediaType.parseMediaTypes(acceptHeader);
+        MediaType.sortBySpecificityAndQuality(mediaTypes);
 
-		List<MediaType> mediaTypes = MediaType.parseMediaTypes(acceptHeader);
-		MediaType.sortBySpecificityAndQuality(mediaTypes);
+        if (client.getUserInfoSignedResponseAlg() != null
+                || client.getUserInfoEncryptedResponseAlg() != null
+                || client.getUserInfoEncryptedResponseEnc() != null) {
+            // client has a preference, see if they ask for plain JSON specifically on this request
+            for (MediaType m : mediaTypes) {
+                if (!m.isWildcardType() && m.isCompatibleWith(UserInfoJWTView.JOSE_MEDIA_TYPE)) {
+                    return UserInfoJWTView.VIEWNAME;
+                } else if (!m.isWildcardType() && m.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+                    return UserInfoView.VIEWNAME;
+                }
+            }
 
-		if (client.getUserInfoSignedResponseAlg() != null
-				|| client.getUserInfoEncryptedResponseAlg() != null
-				|| client.getUserInfoEncryptedResponseEnc() != null) {
-			// client has a preference, see if they ask for plain JSON specifically on this request
-			for (MediaType m : mediaTypes) {
-				if (!m.isWildcardType() && m.isCompatibleWith(UserInfoJWTView.JOSE_MEDIA_TYPE)) {
-					return UserInfoJWTView.VIEWNAME;
-				} else if (!m.isWildcardType() && m.isCompatibleWith(MediaType.APPLICATION_JSON)) {
-					return UserInfoView.VIEWNAME;
-				}
-			}
+            // otherwise return JWT
+            return UserInfoJWTView.VIEWNAME;
+        } else {
+            // client has no preference, see if they asked for JWT specifically on this request
+            for (MediaType m : mediaTypes) {
+                if (!m.isWildcardType() && m.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+                    return UserInfoView.VIEWNAME;
+                } else if (!m.isWildcardType() && m.isCompatibleWith(UserInfoJWTView.JOSE_MEDIA_TYPE)) {
+                    return UserInfoJWTView.VIEWNAME;
+                }
+            }
 
-			// otherwise return JWT
-			return UserInfoJWTView.VIEWNAME;
-		} else {
-			// client has no preference, see if they asked for JWT specifically on this request
-			for (MediaType m : mediaTypes) {
-				if (!m.isWildcardType() && m.isCompatibleWith(MediaType.APPLICATION_JSON)) {
-					return UserInfoView.VIEWNAME;
-				} else if (!m.isWildcardType() && m.isCompatibleWith(UserInfoJWTView.JOSE_MEDIA_TYPE)) {
-					return UserInfoJWTView.VIEWNAME;
-				}
-			}
+            // otherwise return JSON
+            return UserInfoView.VIEWNAME;
+        }
 
-			// otherwise return JSON
-			return UserInfoView.VIEWNAME;
-		}
-
-	}
+    }
 
 }

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/** *****************************************************************************
  * Copyright 2018 The MIT Internet Trust Consortium
  *
  * Portions copyright 2011-2013 The MITRE Corporation
@@ -14,7 +14,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *******************************************************************************/
+ ****************************************************************************** */
 /**
  *
  */
@@ -42,61 +42,61 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository("jpaSystemScopeRepository")
 public class JpaSystemScopeRepository implements SystemScopeRepository {
 
-	@PersistenceContext(unitName="defaultPersistenceUnit")
-	private EntityManager em;
+    @PersistenceContext(name = "persistance-unit")
+    private EntityManager em;
 
-	/* (non-Javadoc)
+    /* (non-Javadoc)
 	 * @see org.mitre.oauth2.repository.SystemScopeRepository#getAll()
-	 */
-	@Override
-	@Transactional(value="defaultTransactionManager")
-	public Set<SystemScope> getAll() {
-		TypedQuery<SystemScope> query = em.createNamedQuery(SystemScope.QUERY_ALL, SystemScope.class);
+     */
+    @Override
+    @Transactional(value = "transactionManager")
+    public Set<SystemScope> getAll() {
+        TypedQuery<SystemScope> query = em.createNamedQuery(SystemScope.QUERY_ALL, SystemScope.class);
 
-		return new LinkedHashSet<>(query.getResultList());
-	}
+        return new LinkedHashSet<>(query.getResultList());
+    }
 
-	/* (non-Javadoc)
+    /* (non-Javadoc)
 	 * @see org.mitre.oauth2.repository.SystemScopeRepository#getById(java.lang.Long)
-	 */
-	@Override
-	@Transactional(value="defaultTransactionManager")
-	public SystemScope getById(Long id) {
-		return em.find(SystemScope.class, id);
-	}
+     */
+    @Override
+    @Transactional(value = "transactionManager")
+    public SystemScope getById(Long id) {
+        return em.find(SystemScope.class, id);
+    }
 
-	/* (non-Javadoc)
+    /* (non-Javadoc)
 	 * @see org.mitre.oauth2.repository.SystemScopeRepository#getByValue(java.lang.String)
-	 */
-	@Override
-	@Transactional(value="defaultTransactionManager")
-	public SystemScope getByValue(String value) {
-		TypedQuery<SystemScope> query = em.createNamedQuery(SystemScope.QUERY_BY_VALUE, SystemScope.class);
-		query.setParameter(SystemScope.PARAM_VALUE, value);
-		return getSingleResult(query.getResultList());
-	}
+     */
+    @Override
+    @Transactional(value = "transactionManager")
+    public SystemScope getByValue(String value) {
+        TypedQuery<SystemScope> query = em.createNamedQuery(SystemScope.QUERY_BY_VALUE, SystemScope.class);
+        query.setParameter(SystemScope.PARAM_VALUE, value);
+        return getSingleResult(query.getResultList());
+    }
 
-	/* (non-Javadoc)
+    /* (non-Javadoc)
 	 * @see org.mitre.oauth2.repository.SystemScopeRepository#remove(org.mitre.oauth2.model.SystemScope)
-	 */
-	@Override
-	@Transactional(value="defaultTransactionManager")
-	public void remove(SystemScope scope) {
-		SystemScope found = getById(scope.getId());
+     */
+    @Override
+    @Transactional(value = "transactionManager")
+    public void remove(SystemScope scope) {
+        SystemScope found = getById(scope.getId());
 
-		if (found != null) {
-			em.remove(found);
-		}
+        if (found != null) {
+            em.remove(found);
+        }
 
-	}
+    }
 
-	/* (non-Javadoc)
+    /* (non-Javadoc)
 	 * @see org.mitre.oauth2.repository.SystemScopeRepository#save(org.mitre.oauth2.model.SystemScope)
-	 */
-	@Override
-	@Transactional(value="defaultTransactionManager")
-	public SystemScope save(SystemScope scope) {
-		return saveOrUpdate(scope.getId(), em, scope);
-	}
+     */
+    @Override
+    @Transactional(value = "transactionManager")
+    public SystemScope save(SystemScope scope) {
+        return saveOrUpdate(scope.getId(), em, scope);
+    }
 
 }
